@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cyberpunk / Hacker Game Aesthetic Colors */
+  --color-background: #0f172a; /* Slate 900 */
+  --color-foreground: #f8fafc; /* Slate 50 */
+  
+  --color-primary: #10b981; /* Emerald 500 for terminal text/success */
+  --color-primary-foreground: #022c22;
+  
+  --color-destructive: #ef4444;
+  --color-destructive-light: rgba(239, 68, 68, 0.2);
+  
+  --color-warning: #f59e0b;
+  --color-warning-light: rgba(245, 158, 11, 0.2);
+  
+  --color-card: #1e293b; /* Slate 800 */
+  --color-card-foreground: #f8fafc;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  table, code, .font-mono {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+}
+
+@layer components {
+  .game-panel {
+    background-color: var(--color-card);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    box-shadow: 0 4px 20px -2px rgb(0 0 0 / 0.5);
+  }
+  
+  .crt-effect::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 50;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+  }
+}
