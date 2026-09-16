@@ -4,6 +4,7 @@ import type { DBTable } from '../../lib/normalization/engine';
 import { checkAtomicity, checkRepeatingGroups } from '../../lib/normalization/engine';
 import GameTable from '../database/GameTable';
 import NormStatus from './NormStatus';
+import { ClassifyQuiz, ValidInvalidQuiz } from './quizzes';
 import { cn } from '../../lib/utils';
 
 function cloneTables(tables: DBTable[]): DBTable[] {
@@ -597,30 +598,7 @@ function IdentifyDependency({ level, onSuccess, onFail }: Props) {
   }
 
   if (mode === 'select_columns') {
-    const [sel, setSel] = useState<string[]>([]);
-    const correct: string[] = task.correctColumns;
-    const toggle = (c: string) => {
-      if (task.wrongColumns?.[c] && !correct.includes(c)) onFail(task.wrongColumns[c]);
-      const next = sel.includes(c) ? sel.filter((x) => x !== c) : [...sel, c];
-      setSel(next);
-      if (setsEqual(next, correct)) onSuccess();
-    };
-    const cols = level.initialTables[0]?.columns.map((c) => c.name) || correct;
-    return (
-      <div className="space-y-3">
-        <p className="text-sm">{task.question}</p>
-        {level.initialTables.length > 0 && <TableStack tables={level.initialTables} selectedHeaders={sel} onHeaderClick={toggle} />}
-        {level.initialTables.length === 0 && (
-          <div className="flex flex-wrap gap-2">
-            {cols.map((c) => (
-              <button key={c} type="button" onClick={() => toggle(c)} className={cn('border px-3 py-1 text-xs', sel.includes(c) ? 'border-emerald-400' : 'border-slate-600')}>
-                {c}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    return <SelectColumnsQuiz level={level} onSuccess={onSuccess} onFail={onFail} />;
   }
 
   if (mode === 'find_remaining') {
@@ -639,65 +617,27 @@ function IdentifyDependency({ level, onSuccess, onFail }: Props) {
   }
 
   if (mode === 'classify_partial') {
-    const attrs = task.attributes as Array<{ name: string; partialDep: boolean }>;
-    const [answers, setAnswers] = useState<Record<string, boolean>>({});
-    const setA = (name: string, partial: boolean) => {
-      const next = { ...answers, [name]: partial };
-      setAnswers(next);
-      if (attrs.every((a) => next[a.name] === a.partialDep)) onSuccess();
-    };
-    return (
-      <div className="space-y-3">
-        {attrs.map((a) => (
-          <div key={a.name} className="flex items-center justify-between gap-3 text-sm border border-slate-800 p-2">
-            <span>{a.name}</span>
-            <div className="flex gap-2">
-              <button type="button" className="border border-slate-600 px-2 py-1 text-xs" onClick={() => setA(a.name, true)}>
-                Partial
-              </button>
-              <button type="button" className="border border-slate-600 px-2 py-1 text-xs" onClick={() => setA(a.name, false)}>
-                Full key
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <PartialQuiz level={level} onSuccess={onSuccess} onFail={onFail} />;
   }
 
   if (mode === 'classify' || mode === 'classify_integrity') {
     const items = (task.dependencies || task.items) as Array<{ from?: string; question?: string; type?: string; answer?: string }>;
-    const options: string[] = task.options;
-    const [answers, setAnswers] = useState<Record<number, string>>({});
-    const pick = (i: number, v: string) => {
-      const expected = items[i].type || items[i].answer;
-      const next = { ...answers, [i]: v };
-      setAnswers(next);
-      if (v !== expected) onFail('Ask whether it depends on the full key, part of the key, or another non-key.');
-      else if (items.every((it, idx) => next[idx] === (it.type || it.answer))) onSuccess();
-    };
     return (
       <div className="space-y-4">
         {level.initialTables.length > 0 && <TableStack tables={level.initialTables} />}
-        {items.map((it, i) => (
-          <div key={i} className="space-y-2">
-            <p className="text-sm">{it.from || it.question}</p>
-            <div className="flex flex-wrap gap-2">
-              {options.map((o) => (
-                <button key={o} type="button" onClick={() => pick(i, o)} className={cn('text-xs border px-2 py-1', answers[i] === o ? 'border-emerald-400' : 'border-slate-600')}>
-                  {o}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+        <ClassifyQuiz
+          items={items.map((it) => ({ prompt: it.from || it.question || '', answer: (it.type || it.answer) as string }))}
+          options={task.options}
+          onSuccess={onSuccess}
+          onFail={onFail}
+          failText="Ask whether it depends on the full key, part of the key, or another non-key."
+        />
       </div>
     );
   }
 
   if (mode === 'identify_transitive') {
     const deps = task.dependencies as Array<{ from: string; isTransitive: boolean }>;
-    const [picked, setPicked] = useState<number | null>(null);
     return (
       <div className="space-y-3">
         {deps.map((d, i) => (
@@ -705,11 +645,10 @@ function IdentifyDependency({ level, onSuccess, onFail }: Props) {
             key={i}
             type="button"
             onClick={() => {
-              setPicked(i);
               if (d.isTransitive) onSuccess();
               else onFail('That one describes the course directly.');
             }}
-            className={cn('w-full text-left border p-3 text-sm', picked === i ? 'border-emerald-400' : 'border-slate-700')}
+            className="w-full text-left border border-slate-700 p-3 text-sm hover:border-emerald-400"
           >
             {d.from}
           </button>
@@ -719,27 +658,67 @@ function IdentifyDependency({ level, onSuccess, onFail }: Props) {
   }
 
   const deps = (task.dependencies || []) as Array<{ from: string; to: string; valid: boolean; explanation?: string }>;
-  const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
-  const pick = (i: number, valid: boolean) => {
-    const next = { ...answers, [i]: valid };
-    setAnswers(next);
-    if (valid !== deps[i].valid) onFail(deps[i].explanation || 'If I know X, can I always find exactly one Y?');
-    else if (deps.every((d, idx) => next[idx] === d.valid)) onSuccess();
-  };
+  return (
+    <div className="space-y-4 relative z-20">
+      <p className="text-sm text-slate-300">Ask: if I know the left side, do I always know exactly one right side?</p>
+      <ValidInvalidQuiz items={deps} onSuccess={onSuccess} onFail={onFail} />
+      {level.initialTables.length > 0 && (
+        <div>
+          <p className="text-xs text-slate-500 mb-2">Reference table</p>
+          <TableStack tables={level.initialTables} />
+        </div>
+      )}
+    </div>
+  );
+}
 
+function SelectColumnsQuiz({ level, onSuccess, onFail }: Props) {
+  const task = level.task;
+  const [sel, setSel] = useState<string[]>([]);
+  const correct: string[] = task.correctColumns;
+  const toggle = (c: string) => {
+    if (task.wrongColumns?.[c] && !correct.includes(c)) onFail(task.wrongColumns[c]);
+    const next = sel.includes(c) ? sel.filter((x) => x !== c) : [...sel, c];
+    setSel(next);
+    if (setsEqual(next, correct)) onSuccess();
+  };
+  const cols = level.initialTables[0]?.columns.map((c) => c.name) || correct;
   return (
     <div className="space-y-3">
-      {deps.map((d, i) => (
-        <div key={i} className="border border-slate-800 p-3 space-y-2">
-          <p className="text-sm font-medium">
-            {d.from} → {d.to}
-          </p>
-          <div className="flex gap-2">
-            <button type="button" className="border border-slate-600 px-3 py-1 text-xs" onClick={() => pick(i, true)}>
-              Valid
+      <p className="text-sm">{task.question}</p>
+      {level.initialTables.length > 0 && <TableStack tables={level.initialTables} selectedHeaders={sel} onHeaderClick={toggle} />}
+      {level.initialTables.length === 0 && (
+        <div className="flex flex-wrap gap-2">
+          {cols.map((c) => (
+            <button key={c} type="button" onClick={() => toggle(c)} className={cn('border px-3 py-1 text-xs', sel.includes(c) ? 'border-emerald-400' : 'border-slate-600')}>
+              {c}
             </button>
-            <button type="button" className="border border-slate-600 px-3 py-1 text-xs" onClick={() => pick(i, false)}>
-              Invalid
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PartialQuiz({ level, onSuccess }: Props) {
+  const attrs = level.task.attributes as Array<{ name: string; partialDep: boolean; explanation?: string }>;
+  const [answers, setAnswers] = useState<Record<string, boolean>>({});
+  const setA = (name: string, partial: boolean) => {
+    const next = { ...answers, [name]: partial };
+    setAnswers(next);
+    if (attrs.every((a) => next[a.name] === a.partialDep)) onSuccess();
+  };
+  return (
+    <div className="space-y-3">
+      {attrs.map((a) => (
+        <div key={a.name} className="flex items-center justify-between gap-3 text-sm border border-slate-800 p-2">
+          <span>{a.name}</span>
+          <div className="flex gap-2">
+            <button type="button" className={cn('border px-2 py-1 text-xs', answers[a.name] === true && 'border-emerald-400')} onClick={() => setA(a.name, true)}>
+              Partial
+            </button>
+            <button type="button" className={cn('border px-2 py-1 text-xs', answers[a.name] === false && 'border-emerald-400')} onClick={() => setA(a.name, false)}>
+              Full key
             </button>
           </div>
         </div>

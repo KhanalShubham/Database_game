@@ -554,7 +554,7 @@ const levels: LevelConfig[] = [
     'Mark each one: VALID or INVALID.',
   ],
   challengeType: 'IDENTIFY_DEPENDENCY',
-  initialTables: [],
+  initialTables: [MESSY_TABLE],
   task: {
     dependencies: [
       { from: 'Student_ID', to: 'Student_Name', valid: true, explanation: 'One Student_ID always maps to one Student_Name.' },
@@ -2085,7 +2085,13 @@ const levels: LevelConfig[] = [
       { name: '1NF', instruction: 'Ensure all cells are atomic.' },
       { name: '2NF', instruction: 'Remove all partial dependencies.' },
       { name: '3NF', instruction: 'Remove all transitive dependencies.' },
-      { name: 'INTEGRITY', instruction: 'Apply entity, referential, domain, and unique rules.' },
+      { name: 'INTEGRITY', instruction: 'Protect keys, references, domains, and unique values.' },
+    ],
+    expectedFinalTables: [
+      { name: 'STUDENT', requiredColumns: ['Student_ID', 'Student_Name'] },
+      { name: 'COURSE', requiredColumns: ['Course_ID', 'Course_Name', 'Instructor_ID'] },
+      { name: 'INSTRUCTOR', requiredColumns: ['Instructor_ID', 'Instructor_Name', 'Instructor_Phone'] },
+      { name: 'ENROLLMENT', requiredColumns: ['Student_ID', 'Course_ID', 'Semester'] },
     ],
     expectedFinalState: {
       tables: ['STUDENT', 'COURSE', 'INSTRUCTOR', 'ENROLLMENT'],

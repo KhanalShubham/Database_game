@@ -60,7 +60,7 @@ export const useGameStore = create<GameStore>()(
         })),
     }),
     {
-      name: 'database-zero-progress',
+      name: 'database-zero-cases-v1',
       partialize: (state) => ({
         unlockedLevelId: state.unlockedLevelId,
         xp: state.xp,
