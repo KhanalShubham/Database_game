@@ -57,7 +57,10 @@ export default function PuzzlePlay({
     if (index === step.correctChoice) {
       success();
     } else {
-      fail('That creates a data problem. Look at the result below.');
+      const customFail =
+        step.choiceConsequences?.[index]?.explanation ||
+        'That creates a data problem. Look at the result below.';
+      fail(customFail);
     }
   };
 
@@ -123,7 +126,9 @@ export default function PuzzlePlay({
     setLinks(next);
     setSelectedSource(null);
     if (Object.keys(next).length === Object.keys(step.connections ?? {}).length) {
-      const valid = Object.entries(step.connections ?? {}).every(([from, to]) => next[to] === from);
+      const valid = Object.entries(step.connections ?? {}).every(
+        ([expectedTarget, expectedSource]) => next[expectedTarget] === expectedSource
+      );
       if (valid) {
         success();
       } else {
@@ -189,6 +194,8 @@ export default function PuzzlePlay({
             }}
             changeLabel={show(step.beforeAfter.changeLabel)}
             changeCountBadge={step.beforeAfter.changeBadge}
+            evidenceNotes={step.beforeAfter.evidenceNotes}
+            therefore={step.beforeAfter.therefore}
             after={
               step.beforeAfter.afterColumns
                 ? {
@@ -337,51 +344,49 @@ export default function PuzzlePlay({
 
         {/* --- CONNECT PUZZLE --- */}
         {step.kind === 'CONNECT' && (
-          <div className="connect-puzzle-layout">
-            <div className="connect-sources">
-              <span className="connect-header">DETERMINANT</span>
-              {step.sources?.map((src) => {
-                const targetMatch = Object.entries(links).find(([, linkedSrc]) => linkedSrc === src)?.[0];
-                return (
-                  <button
-                    key={src}
-                    type="button"
-                    className={`connect-node ${selectedSource === src ? 'node-selected' : ''}`}
-                    onClick={() => setSelectedSource(src)}
-                    draggable={!done}
-                    onDragStart={(e) => e.dataTransfer.setData('text/plain', src)}
-                    disabled={done}
-                  >
-                    <strong>{show(src)}</strong>
-                    {targetMatch && <span className="link-indicator">→ {show(targetMatch)}</span>}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="connect-puzzle-container">
+            <div className="connect-puzzle-layout">
+              <div className="connect-column">
+                <span className="connect-header">DETERMINANT</span>
+                <div className="connect-nodes-list">
+                  {step.sources?.map((src) => {
+                    const targetMatch = Object.entries(links).find(([, linkedSrc]) => linkedSrc === src)?.[0];
+                    return (
+                      <button
+                        key={src}
+                        type="button"
+                        className={`connect-node ${selectedSource === src ? 'node-selected' : ''}`}
+                        onClick={() => setSelectedSource(src)}
+                        disabled={done}
+                      >
+                        <strong>{show(src)}</strong>
+                        {targetMatch && <span className="link-indicator">→ {show(targetMatch)}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-            <div className="connect-arrow-visual">
-              <span>→</span>
-            </div>
+              <div className="connect-arrow-visual">
+                <span>───►</span>
+              </div>
 
-            <div className="connect-targets">
-              <span className="connect-header">DEPENDENT</span>
-              {step.targets?.map((tgt) => (
-                <button
-                  key={tgt}
-                  type="button"
-                  className="connect-node target-node"
-                  onClick={() => selectedSource && connect(selectedSource, tgt)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const src = e.dataTransfer.getData('text/plain');
-                    if (src) connect(src, tgt);
-                  }}
-                  disabled={done}
-                >
-                  <strong>{show(tgt)}</strong>
-                </button>
-              ))}
+              <div className="connect-column">
+                <span className="connect-header">DEPENDENT</span>
+                <div className="connect-nodes-list">
+                  {step.targets?.map((tgt) => (
+                    <button
+                      key={tgt}
+                      type="button"
+                      className="connect-node target-node"
+                      onClick={() => selectedSource && connect(selectedSource, tgt)}
+                      disabled={done}
+                    >
+                      <strong>{show(tgt)}</strong>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {Object.entries(links).length > 0 && (
@@ -389,10 +394,17 @@ export default function PuzzlePlay({
                 {Object.entries(links).map(([tgt, src]) => (
                   <div key={tgt} className="dep-arrow-row">
                     <span className="dep-determinant">{show(src)}</span>
-                    <span className="dep-arrow">── determines ──→</span>
+                    <span className="dep-arrow">─────────►</span>
                     <span className="dep-dependent">{show(tgt)}</span>
                   </div>
                 ))}
+                {done && (
+                  <div className="dep-confirmation">
+                    {Object.entries(links).map(([tgt, src]) => (
+                      <p key={tgt}><strong>{show(src)}</strong> determines <strong>{show(tgt)}</strong>.</p>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

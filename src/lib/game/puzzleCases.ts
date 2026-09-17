@@ -25,12 +25,27 @@ export interface ChoiceConsequence {
   explanation: string;
 }
 
+export interface EvidenceHighlight {
+  label: string;
+  from: string;
+  to: string;
+  status: 'CHANGED' | 'DID NOT CHANGE';
+}
+
+export interface ThereforeFlow {
+  determinant: string;
+  dependent: string;
+  explanation?: string;
+}
+
 export interface BeforeAfterData {
   beforeTitle: string;
   beforeColumns: string[];
   beforeRows: Array<Record<string, string | number | null>>;
   changeLabel: string;
   changeBadge?: string;
+  evidenceNotes?: EvidenceHighlight[];
+  therefore?: ThereforeFlow;
   afterTitle?: string;
   afterColumns?: string[];
   afterRows?: Array<Record<string, string | number | null>>;
@@ -329,21 +344,8 @@ export const puzzleCases: PuzzleCase[] = [
         speaker: 'Warehouse AI',
         message: 'A match result needs Player ID and Match ID. But a player’s name stays the same in every match.',
         prompt: 'Which attribute determines Player Name?',
-        actionLabel: 'Connect the arrow',
-        kind: 'CONNECT',
-        table: {
-          name: 'Player match results',
-          columns: ['PlayerID', 'MatchID', 'PlayerName', 'Map', 'Kills'],
-          primaryKeys: ['PlayerID', 'MatchID'],
-          rows: [
-            { PlayerID: 'P01', MatchID: 'M01', PlayerName: 'RAVEN', Map: 'Erangel', Kills: 8 },
-            { PlayerID: 'P01', MatchID: 'M02', PlayerName: 'RAVEN', Map: 'Miramar', Kills: 3 },
-            { PlayerID: 'P02', MatchID: 'M01', PlayerName: 'VENOM', Map: 'Erangel', Kills: 5 },
-          ],
-        },
-        sources: ['PlayerID', 'MatchID', 'PlayerID + MatchID'],
-        targets: ['PlayerName'],
-        connections: { PlayerName: 'PlayerID' },
+        actionLabel: 'Choose the attribute',
+        kind: 'CHOICE',
         beforeAfter: {
           beforeTitle: 'MATCH RECORDS',
           beforeColumns: ['PlayerID', 'MatchID', 'PlayerName'],
@@ -351,19 +353,58 @@ export const puzzleCases: PuzzleCase[] = [
             { PlayerID: 'P01', MatchID: 'M01', PlayerName: 'RAVEN' },
             { PlayerID: 'P01', MatchID: 'M02', PlayerName: 'RAVEN' },
           ],
-          changeLabel: 'MATCH CHANGES · NAME DOES NOT',
-          afterTitle: 'DEPENDENCY',
-          afterColumns: ['Determinant', 'Dependent'],
-          afterRows: [{ Determinant: 'PlayerID: P01', Dependent: 'PlayerName: RAVEN' }],
-          warning: 'Does Match ID help find the name? No.',
+          changeLabel: 'MATCH CHANGES · NAME STAYS SAME',
+          evidenceNotes: [
+            { label: 'MatchID', from: 'M01', to: 'M02', status: 'CHANGED' },
+            { label: 'PlayerName', from: 'RAVEN', to: 'RAVEN', status: 'DID NOT CHANGE' },
+          ],
+          therefore: {
+            determinant: 'PlayerID',
+            dependent: 'PlayerName',
+            explanation: 'PlayerID determines PlayerName.',
+          },
+          warning: 'Does Match ID help determine the player name? No.',
         },
-        success: 'Right. Player ID determines Player Name without needing Match ID.',
-        clue: 'The Match ID changes, but the name does not.',
-        biggerClue: 'Connect Player ID to Player Name.',
+        choices: ['Player ID', 'Match ID'],
+        correctChoice: 0,
+        choiceConsequences: {
+          0: {
+            headline: 'Player ID determines Player Name',
+            consequenceTable: {
+              name: 'Player ID determines Player Name',
+              columns: ['PlayerID', 'PlayerName'],
+              primaryKeys: ['PlayerID'],
+              rows: [
+                { PlayerID: 'P01', PlayerName: 'RAVEN' },
+                { PlayerID: 'P02', PlayerName: 'VENOM' },
+              ],
+            },
+            impactNote: 'Knowing Player ID is enough to determine Player Name.',
+            explanation:
+              'The composite key is (PlayerID + MatchID), but PlayerName depends only on PlayerID. Because it depends on only part of the composite key, this is a partial dependency (2NF).',
+          },
+          1: {
+            headline: 'Match ID does not determine Player Name',
+            consequenceTable: {
+              name: 'Match ID Lookup',
+              columns: ['MatchID', 'PlayerName'],
+              rows: [
+                { MatchID: 'M01', PlayerName: 'RAVEN' },
+                { MatchID: 'M01', PlayerName: 'VENOM' },
+              ],
+            },
+            impactNote: 'Match M01 contains multiple players (RAVEN and VENOM).',
+            explanation:
+              'Not quite. Match ID changes, but Player Name stays the same for the player.',
+          },
+        },
+        success: 'Correct. Player ID determines Player Name without needing Match ID.',
+        clue: 'Match ID changes from M01 to M02, but Player Name stays RAVEN.',
+        biggerClue: 'Only Player ID is needed to identify the player’s name.',
       },
     ],
     revealTitle: 'Partial Dependency & 2NF',
-    reveal: 'Player Name depends only on Player ID. It does not belong in the match results table.',
+    reveal: 'Player Name depends on only part of the composite key (Player ID). Second Normal Form (2NF) removes partial dependencies into their own table.',
   },
 
   // ZONE 05: UPDATE ANOMALY
