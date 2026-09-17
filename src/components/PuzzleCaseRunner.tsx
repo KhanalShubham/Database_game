@@ -80,14 +80,14 @@ export default function PuzzleCaseRunner() {
             <h2>{puzzleCase.revealTitle}</h2>
             <p>{puzzleCase.reveal}</p>
             <div className="tiny-reward">
-              {isDemo ? 'Teacher demo · progress and score are unchanged' : isFirstClear ? `Database stabilized · +${puzzleCase.xp} recovery points` : 'Practice replay · no score change'}
+              {isDemo ? 'Practice demo · progress and score are unchanged' : isFirstClear ? `Database stabilized · +${puzzleCase.xp} recovery points` : 'Practice replay · no score change'}
             </div>
             <button
               type="button"
               className="btn-primary"
               onClick={() => isDemo ? setGameState('MAP') : completeLevel(puzzleCase.id, 0, [puzzleCase.revealTitle], 4)}
             >
-              {isDemo ? 'Return to demo menu' : puzzleCase.id === PUZZLE_TOTAL ? 'Publish tournament results' : 'Climb to the next rung'}
+              {isDemo ? 'Return to menu' : puzzleCase.id === PUZZLE_TOTAL ? 'Publish results' : 'Next zone'}
             </button>
           </div>
         )}

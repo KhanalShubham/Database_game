@@ -57,7 +57,7 @@ export default function PuzzlePlay({
     if (index === step.correctChoice) {
       success();
     } else {
-      fail('That creates a data anomaly or violates constraints. Inspect the live consequence below and try again.');
+      fail('That creates a data problem. Look at the result below.');
     }
   };
 
@@ -74,7 +74,7 @@ export default function PuzzlePlay({
       if ([...next].sort().join(',') === expected) {
         success();
       } else {
-        fail('Those rows show different identities. Look for two rows sharing the exact same Player ID.');
+        fail('Those rows have different IDs. Try another pair.');
         setSelectedRows([]);
       }
     }
@@ -92,7 +92,7 @@ export default function PuzzlePlay({
       if (valid) {
         success();
       } else {
-        fail('One attribute is in the wrong table. Tap the card or drag it to relocate.');
+        fail('One field is in the wrong table. Tap it to move it.');
       }
     }
   };
@@ -111,7 +111,7 @@ export default function PuzzlePlay({
       if (valid) {
         success();
       } else {
-        fail('One record violates domain constraints. Adjust the verdict and try again.');
+        fail('One choice allows invalid data. Change it and try again.');
       }
     }
   };
@@ -127,12 +127,11 @@ export default function PuzzlePlay({
       if (valid) {
         success();
       } else {
-        fail('That dependency arrow does not hold for all rows in the table. Try again.');
+        fail('That arrow does not match the data. Try again.');
       }
     }
   };
 
-  // Prepare resolved table rows with player name substituted
   const resolvedTable = step.table
     ? {
         ...step.table,
@@ -147,7 +146,6 @@ export default function PuzzlePlay({
       }
     : null;
 
-  // Selected Choice Consequence
   const currentConsequence =
     selectedChoice !== null && step.choiceConsequences?.[selectedChoice]
       ? step.choiceConsequences[selectedChoice]
@@ -155,19 +153,15 @@ export default function PuzzlePlay({
 
   return (
     <div className="puzzle-stage">
-      {/* 1. STORY CONTEXT */}
+      {/* 1. SHORT STORY / SITUATION */}
       <div className="story-bubble">
         <span className="speaker-tag">{show(step.speaker)}</span>
         <p>“{show(step.message)}”</p>
       </div>
 
-      {/* 2. REAL DATASET TABLE */}
+      {/* 2. REAL TABLE */}
       {resolvedTable && step.kind !== 'GROUP' && (
         <div className="puzzle-section-block">
-          <div className="section-mini-tag">
-            <span className="live-dot-pulse">●</span>
-            <span>OBSERVE THE LIVE DATABASE STATE:</span>
-          </div>
           <LiveDataTable
             title={resolvedTable.name}
             columns={resolvedTable.columns}
@@ -180,13 +174,9 @@ export default function PuzzlePlay({
         </div>
       )}
 
-      {/* 3. BEFORE / AFTER VISUAL TRANSFORMATION */}
+      {/* 3. BEFORE / AFTER */}
       {step.beforeAfter && step.kind !== 'GROUP' && (
         <div className="puzzle-section-block">
-          <div className="section-mini-tag">
-            <span className="live-dot-pulse">●</span>
-            <span>SEE THE CHANGE IN THE DATA:</span>
-          </div>
           <BeforeAfterTable
             before={{
               title: show(step.beforeAfter.beforeTitle),
@@ -217,9 +207,8 @@ export default function PuzzlePlay({
         </div>
       )}
 
-      {/* 4. QUESTION & INTERACTIVE CONTROLS */}
+      {/* 4. QUESTION & INTERACTION */}
       <div className="puzzle-question-card">
-        <div className="next-action-pill">{show(step.actionLabel)}</div>
         <h2 className="question-prompt">{show(step.prompt)}</h2>
 
         {/* --- CHOICE PUZZLE --- */}
@@ -242,18 +231,13 @@ export default function PuzzlePlay({
                   disabled={done}
                 >
                   <span className="choice-text">{show(choice)}</span>
-                  {isSelected && (
-                    <small className="choice-status-pill">
-                      {isCorrect ? '✓ Valid Database Decision' : '⚠ Causes Database Anomaly'}
-                    </small>
-                  )}
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* --- LIVE CONSEQUENCE FOR CHOICE --- */}
+        {/* --- CHOICE RESULT / CONSEQUENCE --- */}
         {currentConsequence && (
           <ConsequenceReveal
             status={selectedChoice === step.correctChoice ? 'correct' : 'warning'}
@@ -264,30 +248,14 @@ export default function PuzzlePlay({
           />
         )}
 
-        {/* --- PAIR SELECTION PUZZLE --- */}
+        {/* --- PAIR PUZZLE --- */}
         {step.kind === 'PAIR' && (
           <div className="pair-selection-panel" aria-live="polite">
-            <div className="pair-status-bar">
-              <span className="live-dot-pulse">●</span>
-              <strong>CLICK 2 ROWS ABOVE WITH DUPLICATE PLAYER ID:</strong>
-            </div>
-            {selectedRows.length === 0 ? (
-              <p className="pair-hint">Tap any row in the table above to inspect its primary key.</p>
-            ) : (
-              <div className="selected-rows-preview">
-                {selectedRows.map((rIdx) => (
-                  <div key={rIdx} className="preview-row-tag">
-                    <span>Row {rIdx + 1}:</span>
-                    <code>
-                      {Object.entries(step.table?.rows[rIdx] ?? {})
-                        .map(([k, v]) => `${k}: ${show(String(v))}`)
-                        .join('  |  ')}
-                    </code>
-                  </div>
-                ))}
-              </div>
-            )}
-            <span className="selection-count-tag">{selectedRows.length} / 2 rows selected</span>
+            <p className="pair-hint">
+              {selectedRows.length === 0
+                ? 'Tap two rows in the table above that have the same ID.'
+                : `${selectedRows.length} of 2 rows selected`}
+            </p>
           </div>
         )}
 
@@ -308,7 +276,7 @@ export default function PuzzlePlay({
           />
         )}
 
-        {/* --- GUARD PUZZLE: INTEGRITY GATES --- */}
+        {/* --- GUARD PUZZLE --- */}
         {step.kind === 'GUARD' && (
           <div className="guard-puzzle-layout">
             <div className="guard-stream-list">
@@ -322,7 +290,7 @@ export default function PuzzlePlay({
                       onClick={() => judge(index, 'Accept')}
                       disabled={done}
                     >
-                      ✓ Ingest
+                      Accept
                     </button>
                     <button
                       type="button"
@@ -330,7 +298,7 @@ export default function PuzzlePlay({
                       onClick={() => judge(index, 'Block')}
                       disabled={done}
                     >
-                      ✕ Block
+                      Block
                     </button>
                   </div>
                 </div>
@@ -339,7 +307,7 @@ export default function PuzzlePlay({
 
             <div className="integrity-gate-visual" aria-live="polite">
               <div className="gate-column gate-accepted">
-                <span className="gate-col-title">✓ ACCEPTED (DATABASE COMMITTED)</span>
+                <span className="gate-col-title">ACCEPTED</span>
                 {(step.records ?? []).map(
                   (rec, idx) =>
                     verdicts[idx] === 'Accept' && (
@@ -348,15 +316,11 @@ export default function PuzzlePlay({
                       </div>
                     )
                 )}
-                {!Object.values(verdicts).includes('Accept') && <small className="empty-gate">No records committed yet</small>}
-              </div>
-
-              <div className="gate-divider">
-                <span>DATA GATE</span>
+                {!Object.values(verdicts).includes('Accept') && <small className="empty-gate">None</small>}
               </div>
 
               <div className="gate-column gate-blocked">
-                <span className="gate-col-title">✕ BLOCKED (CONSTRAINT VIOLATION)</span>
+                <span className="gate-col-title">BLOCKED</span>
                 {(step.records ?? []).map(
                   (rec, idx) =>
                     verdicts[idx] === 'Block' && (
@@ -365,17 +329,17 @@ export default function PuzzlePlay({
                       </div>
                     )
                 )}
-                {!Object.values(verdicts).includes('Block') && <small className="empty-gate">No records blocked yet</small>}
+                {!Object.values(verdicts).includes('Block') && <small className="empty-gate">None</small>}
               </div>
             </div>
           </div>
         )}
 
-        {/* --- CONNECT PUZZLE: DEPENDENCY DIAGRAM --- */}
+        {/* --- CONNECT PUZZLE --- */}
         {step.kind === 'CONNECT' && (
           <div className="connect-puzzle-layout">
             <div className="connect-sources">
-              <span className="connect-header">DETERMINANT (LEFT SIDE)</span>
+              <span className="connect-header">DETERMINANT</span>
               {step.sources?.map((src) => {
                 const targetMatch = Object.entries(links).find(([, linkedSrc]) => linkedSrc === src)?.[0];
                 return (
@@ -389,18 +353,18 @@ export default function PuzzlePlay({
                     disabled={done}
                   >
                     <strong>{show(src)}</strong>
-                    {targetMatch && <span className="link-indicator">──▶ {show(targetMatch)}</span>}
+                    {targetMatch && <span className="link-indicator">→ {show(targetMatch)}</span>}
                   </button>
                 );
               })}
             </div>
 
             <div className="connect-arrow-visual">
-              <span>────────▶</span>
+              <span>→</span>
             </div>
 
             <div className="connect-targets">
-              <span className="connect-header">DEPENDENT (RIGHT SIDE)</span>
+              <span className="connect-header">DEPENDENT</span>
               {step.targets?.map((tgt) => (
                 <button
                   key={tgt}
@@ -420,54 +384,41 @@ export default function PuzzlePlay({
               ))}
             </div>
 
-            <div className="live-dependency-diagram">
-              <div className="diagram-title">
-                <span className="live-dot-pulse">●</span>
-                <span>ESTABLISHED FUNCTIONAL DEPENDENCIES:</span>
-              </div>
-              {Object.entries(links).length === 0 ? (
-                <p className="empty-diagram-prompt">Select a determinant attribute and click its dependent attribute above.</p>
-              ) : (
-                Object.entries(links).map(([tgt, src]) => (
+            {Object.entries(links).length > 0 && (
+              <div className="live-dependency-diagram">
+                {Object.entries(links).map(([tgt, src]) => (
                   <div key={tgt} className="dep-arrow-row">
                     <span className="dep-determinant">{show(src)}</span>
-                    <span className="dep-arrow">──────── determines ───────▶</span>
+                    <span className="dep-arrow">── determines ──→</span>
                     <span className="dep-dependent">{show(tgt)}</span>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* 5. GENTLE FEEDBACK & CLUES */}
+      {/* 5. FEEDBACK & HINT */}
       {wrongMsg && !done && (
         <div className="gentle-feedback-banner" role="alert">
-          <span className="fb-icon">⚠</span>
           <p>{wrongMsg}</p>
         </div>
       )}
 
       {showClue && !done && (
         <div className="auto-clue-card">
-          <span className="clue-tag">💭 INVESTIGATION CLUE</span>
+          <span className="clue-tag">Hint</span>
           <p>{show(wrongMsg ? step.biggerClue : step.clue)}</p>
         </div>
       )}
 
-      {/* 6. SUCCESS BANNER & CONTINUE BUTTON */}
+      {/* 6. RESULT & CONTINUE */}
       {done && (
         <div className="step-success-card">
-          <div className="success-header">
-            <span className="success-icon">✓</span>
-            <div>
-              <span className="success-tag">DATABASE STABILIZED</span>
-              <p className="success-msg">{show(step.success)}</p>
-            </div>
-          </div>
+          <p className="success-msg">{show(step.success)}</p>
           <button type="button" className="btn-primary continue-btn" onClick={onContinue}>
-            Continue to Next Stage →
+            Continue
           </button>
         </div>
       )}

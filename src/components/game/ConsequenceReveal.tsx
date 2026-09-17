@@ -18,21 +18,9 @@ export default function ConsequenceReveal({
   explanation,
   className = '',
 }: ConsequenceRevealProps) {
-  const isCorrect = status === 'correct';
-
   return (
     <div className={`consequence-reveal-card status-${status} ${className}`}>
-      <div className="consequence-header">
-        <span className="consequence-icon">
-          {isCorrect ? '✓' : status === 'warning' ? '⚠' : '✕'}
-        </span>
-        <div className="consequence-headline-wrap">
-          <span className="consequence-tag">
-            {isCorrect ? 'VALID DATABASE TRANSFORMATION' : 'DATABASE CONSEQUENCE / ANOMALY'}
-          </span>
-          <h3 className="consequence-headline">{headline}</h3>
-        </div>
-      </div>
+      <h3 className="consequence-headline">{headline}</h3>
 
       {consequenceTable && (
         <div className="consequence-table-wrap">
@@ -49,7 +37,7 @@ export default function ConsequenceReveal({
 
       {impactNote && (
         <div className="consequence-impact-callout">
-          <strong>DATABASE IMPACT:</strong> <span>{impactNote}</span>
+          <span>{impactNote}</span>
         </div>
       )}
 

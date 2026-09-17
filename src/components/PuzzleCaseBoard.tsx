@@ -35,7 +35,7 @@ export default function PuzzleCaseBoard() {
         </aside>
 
         <main className="data-ladder">
-          <div className="ladder-core">🏆<strong>DATABASE MASTER</strong></div>
+          <div className="ladder-core"><strong>DATABASE MASTER</strong></div>
           {[...puzzleCases].reverse().map((item) => {
             const done = item.id < unlockedLevelId;
             const active = item.id === unlockedLevelId;
@@ -43,30 +43,30 @@ export default function PuzzleCaseBoard() {
               <div ref={active ? activeRung : undefined} key={item.id} className={`ladder-rung ${done ? 'cleared' : active ? 'active' : 'locked'}`}>
                 <div className="ladder-rail" />
                 <button type="button" disabled={!done && !active} onClick={() => startLevel(item.id)}>
-                  <span>{done ? '✓' : active ? '!' : '🔒'}</span>
+                  <span>{done ? '✓' : active ? '!' : '•'}</span>
                   <div>
                     <small>{item.phase} · SCENE {String(item.id).padStart(2, '0')}</small>
                     <strong>{item.rung}</strong>
-                    <em>{done ? item.title : active ? `${item.title} →` : 'Encrypted incident'}</em>
+                    <em>{done ? item.title : active ? `${item.title} →` : 'Locked zone'}</em>
                   </div>
                 </button>
-                {active && <div className="team-climber">{playerName.toUpperCase()} ▲</div>}
+                {active && <div className="player-climber">{playerName.toUpperCase()} ▲</div>}
               </div>
             );
           })}
-          <div className="ladder-start">🪂 DROP ZONE · CORRUPTED PROFILE</div>
+          <div className="ladder-start">DROP ZONE · REGISTRATION</div>
         </main>
 
         <div className="ladder-side">
           <section className="teacher-demos">
-            <span>Teacher access</span>
-            <h2>Two playable demos</h2>
-            <p>Use these before students begin the main ladder.</p>
+            <span>Practice Demos</span>
+            <h2>Two interactive demos</h2>
+            <p>Try these to explore the live database tools.</p>
             {demoCases.map((demo, index) => (
               <button type="button" key={demo.id} onClick={() => startLevel(demo.id)}>
                 <small>DEMO {index + 1}</small>
                 <strong>{demo.title}</strong>
-                <em>{index === 0 ? 'Show a visual data problem' : 'Build tables live'}</em>
+                <em>{index === 0 ? 'Find duplicate records' : 'Build tables live'}</em>
               </button>
             ))}
           </section>
