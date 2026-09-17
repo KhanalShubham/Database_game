@@ -10,8 +10,11 @@ export interface GameStore {
   xp: number;
   health: number;
   unlockedConcepts: string[];
+  playerName: string;
 
   setGameState: (state: GameState) => void;
+  setPlayer: (name: string) => void;
+  setScore: (score: number) => void;
   startLevel: (id: number) => void;
   completeLevel: (id: number, xpGained: number, unlocks?: string[], healthChange?: number) => void;
   addXP: (amount: number) => void;
@@ -28,8 +31,11 @@ export const useGameStore = create<GameStore>()(
       xp: 0,
       health: 37,
       unlockedConcepts: [],
+      playerName: '',
 
       setGameState: (state) => set({ gameState: state }),
+      setPlayer: (name) => set({ playerName: name }),
+      setScore: (score) => set({ xp: Math.max(0, score) }),
 
       startLevel: (id) =>
         set({
@@ -47,7 +53,7 @@ export const useGameStore = create<GameStore>()(
           currentLevelId: null,
         })),
 
-      addXP: (amount) => set((state) => ({ xp: state.xp + amount })),
+      addXP: (amount) => set((state) => ({ xp: Math.max(0, state.xp + amount) })),
 
       takeDamage: (amount) =>
         set((state) => ({
@@ -60,13 +66,14 @@ export const useGameStore = create<GameStore>()(
         })),
     }),
     {
-      name: 'database-zero-cases-v1',
+      name: 'pubg-data-survivor-v2',
       partialize: (state) => ({
         unlockedLevelId: state.unlockedLevelId,
         xp: state.xp,
         health: state.health,
         unlockedConcepts: state.unlockedConcepts,
         gameState: state.gameState === 'LEVEL' ? 'MAP' : state.gameState,
+        playerName: state.playerName,
       }),
     },
   ),
